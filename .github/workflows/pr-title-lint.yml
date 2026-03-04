@@ -1,0 +1,45 @@
+# Reusable workflow: PR Title Lint
+#
+# Enforces conventional-commit PR title format so semantic-release can derive
+# version bumps automatically from squash-merge commit messages.
+#
+# Allowed types: feat, fix, docs, chore, refactor, test, ci, build, perf
+# Breaking changes: feat! or fix! (minor bump while < 1.0.0)
+#
+# Usage in a caller workflow:
+#
+#   jobs:
+#     pr-title:
+#       uses: alacenas/.github/.github/workflows/pr-title-lint.yml@main
+#       secrets: inherit
+
+name: PR Title Lint
+
+on:
+  workflow_call:
+
+jobs:
+  lint:
+    name: pr / title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title
+        uses: amannn/action-semantic-pull-request@v5.5.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            chore
+            refactor
+            test
+            ci
+            build
+            perf
+          requireScope: false
+          subjectPattern: ^.+$
+          subjectPatternError: |
+            The PR title must have a non-empty subject after the type/scope prefix.
+            Example: "feat: add login page" or "fix!: handle null user"

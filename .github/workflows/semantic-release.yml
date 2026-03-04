@@ -1,0 +1,99 @@
+# Reusable workflow: Semantic Release
+#
+# Creates a vX.Y.Z git tag and GitHub Release on every merge to main,
+# using conventional-commit messages (squash-merge PR titles).
+#
+# Version bump rules (pre-1.0.0 mode):
+#   fix:   → patch bump  (0.0.x)
+#   feat:  → minor bump  (0.x.0)
+#   feat!: → minor bump  (0.x.0)  ← breaking changes stay minor until v1
+#
+# Caller must grant write permissions and pass a token with release scope.
+#
+# Usage in a caller workflow:
+#
+#   jobs:
+#     release:
+#       uses: alacenas/.github/.github/workflows/semantic-release.yml@main
+#       secrets:
+#         release-token: ${{ secrets.GITHUB_TOKEN }}
+
+name: Semantic Release
+
+on:
+  workflow_call:
+    secrets:
+      release-token:
+        description: >
+          GitHub token with contents:write and pull-requests:write permissions.
+          Pass secrets.GITHUB_TOKEN or a fine-grained PAT.
+        required: true
+    outputs:
+      new-release-published:
+        description: "'true' when a new release was created, 'false' otherwise"
+        value: ${{ jobs.release.outputs.new-release-published }}
+      new-release-version:
+        description: "The version string of the new release (e.g. '0.2.0')"
+        value: ${{ jobs.release.outputs.new-release-version }}
+
+jobs:
+  release:
+    name: release / semantic-release
+    runs-on: ubuntu-latest
+    outputs:
+      new-release-published: ${{ steps.semantic.outputs.new-release-published }}
+      new-release-version: ${{ steps.semantic.outputs.new-release-version }}
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.release-token }}
+
+      - uses: actions/setup-node@v4.3.0
+        with:
+          node-version: "22"
+
+      - name: Run semantic-release
+        id: semantic
+        env:
+          GITHUB_TOKEN: ${{ secrets.release-token }}
+        # Inline release config is used only when the caller repo has no config file.
+        # Add a .releaserc.json in the caller repo to override this default.
+        run: |
+          # Write default config if no release config file is found in the repo.
+          config_found=false
+          for f in .releaserc.json .releaserc.js .releaserc.yml .releaserc.yaml release.config.js release.config.cjs; do
+            [ -f "$f" ] && config_found=true && break
+          done
+
+          if [ "$config_found" = "false" ]; then
+            cat > .releaserc.json << 'EOF'
+          {
+            "branches": ["main"],
+            "plugins": [
+              "@semantic-release/commit-analyzer",
+              "@semantic-release/release-notes-generator",
+              "@semantic-release/github"
+            ]
+          }
+          EOF
+          fi
+
+          # Record tags before release to detect if a new one is created.
+          before_tags=$(git tag --list 'v*' | sort -V)
+
+          npx --yes semantic-release
+
+          # Compare tags to determine if a new release was published.
+          after_tags=$(git tag --list 'v*' | sort -V)
+          new_tag=$(comm -13 <(echo "$before_tags") <(echo "$after_tags") | tail -1)
+          if [ -n "$new_tag" ]; then
+            echo "new-release-published=true" >> "$GITHUB_OUTPUT"
+            echo "new-release-version=${new_tag#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "new-release-published=false" >> "$GITHUB_OUTPUT"
+          fi
