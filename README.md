@@ -6,7 +6,8 @@ Alacenas is a GitHub organization for collaborative software projects. This repo
 
 | Repository | Description |
 |---|---|
-| [alacenas/alacenas](https://github.com/alacenas/alacenas) | Org home repo — standards, docs, and meta information |
+| [alacenas/.github](https://github.com/alacenas/.github) | Org home repo — standards, docs, and meta information |
+| [alacenas/alacenas-lab](https://github.com/alacenas/alacenas-lab) | Experimental projects and sandbox work |
 
 ## Standards
 
