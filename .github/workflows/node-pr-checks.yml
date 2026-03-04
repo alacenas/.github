@@ -1,0 +1,114 @@
+# Reusable workflow: Node PR Checks
+#
+# Runs lint, typecheck, test, and build for Node.js projects using pnpm.
+# Produces stable check names for branch-protection rules:
+#   pr / lint, pr / typecheck, pr / test, pr / build
+#
+# Usage in a caller workflow:
+#
+#   jobs:
+#     checks:
+#       uses: alacenas/.github/.github/workflows/node-pr-checks.yml@main
+#       with:
+#         node-version: "22"      # optional, default "22"
+#         pnpm-version: "9"       # optional, default "9"
+#         working-directory: "."  # optional, default "."
+
+name: Node PR Checks
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node.js version to use (LTS recommended)
+        type: string
+        default: "22"
+      pnpm-version:
+        description: pnpm version to install
+        type: string
+        default: "9"
+      working-directory:
+        description: Directory containing package.json (relative to repo root)
+        type: string
+        default: "."
+
+jobs:
+  lint:
+    name: pr / lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: pnpm/action-setup@a7487ba4f4de61b32f5f25e2ab82ac4f0bf6e3d1 # v4.1.0
+        with:
+          version: ${{ inputs.pnpm-version }}
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: pnpm
+          cache-dependency-path: ${{ inputs.working-directory }}/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        working-directory: ${{ inputs.working-directory }}
+        run: pnpm lint
+
+  typecheck:
+    name: pr / typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: pnpm/action-setup@a7487ba4f4de61b32f5f25e2ab82ac4f0bf6e3d1 # v4.1.0
+        with:
+          version: ${{ inputs.pnpm-version }}
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: pnpm
+          cache-dependency-path: ${{ inputs.working-directory }}/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        working-directory: ${{ inputs.working-directory }}
+        run: pnpm typecheck
+
+  test:
+    name: pr / test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: pnpm/action-setup@a7487ba4f4de61b32f5f25e2ab82ac4f0bf6e3d1 # v4.1.0
+        with:
+          version: ${{ inputs.pnpm-version }}
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: pnpm
+          cache-dependency-path: ${{ inputs.working-directory }}/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: pnpm install --frozen-lockfile
+      - name: Test
+        working-directory: ${{ inputs.working-directory }}
+        run: pnpm test
+
+  build:
+    name: pr / build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: pnpm/action-setup@a7487ba4f4de61b32f5f25e2ab82ac4f0bf6e3d1 # v4.1.0
+        with:
+          version: ${{ inputs.pnpm-version }}
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: pnpm
+          cache-dependency-path: ${{ inputs.working-directory }}/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        working-directory: ${{ inputs.working-directory }}
+        run: pnpm build
