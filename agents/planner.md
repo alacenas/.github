@@ -5,6 +5,7 @@ agents:
   - Innovation Architect
   - Stability Architect
   - Efficiency Architect
+  - Senior Software Engineer
 tools:
   - agent
   - github-issue
